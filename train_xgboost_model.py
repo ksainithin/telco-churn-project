@@ -1,3 +1,7 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
 from pathlib import Path
 
 import joblib
@@ -132,3 +136,66 @@ joblib.dump(model, model_path)
 
 print("\nSAVED MODEL")
 print(model_path)
+
+
+feature_names = (
+    model.named_steps["preprocessor"]
+    .get_feature_names_out()
+)
+
+feature_importance_values = (
+    model.named_steps["classifier"]
+    .feature_importances_
+)
+
+feature_importance_df = pd.DataFrame({
+    "Feature": feature_names,
+    "Importance": feature_importance_values,
+})
+
+feature_importance_df["Feature"] = (
+    feature_importance_df["Feature"]
+    .str.replace("numeric__", "", regex=False)
+    .str.replace("categorical__", "", regex=False)
+)
+
+feature_importance_df = feature_importance_df.sort_values(
+    "Importance",
+    ascending=False,
+)
+
+print("\nTOP 10 IMPORTANT FEATURES")
+print(feature_importance_df.head(10).to_string(index=False))
+
+top_features = (
+    feature_importance_df.head(10)
+    .sort_values("Importance")
+)
+
+figure, axis = plt.subplots(figsize=(10, 7))
+
+sns.barplot(
+    data=top_features,
+    x="Importance",
+    y="Feature",
+    color="#4C72B0",
+    ax=axis,
+)
+
+axis.set_title("Top 10 Features Used by the XGBoost Model")
+axis.set_xlabel("Importance")
+axis.set_ylabel("Customer Feature")
+
+figure.tight_layout()
+
+importance_chart_path = (
+    Path("reports/figures")
+    / "xgboost_feature_importance.png"
+)
+
+figure.savefig(importance_chart_path, dpi=150)
+
+print("\nFEATURE IMPORTANCE CHART SAVED")
+print(importance_chart_path)
+
+plt.show()
